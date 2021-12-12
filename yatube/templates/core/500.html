@@ -1,0 +1,7 @@
+{% extends "base.html" %}
+{% block title %}500{% endblock %}
+{% block content %}
+  <h1>Ошибка сервера</h1>
+  <p>На сервере произошла ошибка. Пожалуйста, попробуйте позже.</p>
+  <a href="{% url 'posts:index' %}"> Идите на главную</a>
+{% endblock %}
