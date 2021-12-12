@@ -24,7 +24,7 @@ class GroupAdmin(admin.ModelAdmin):
 
 
 class CommentAdmin(admin.ModelAdmin):
-    list_display = ('post','author', 'text')
+    list_display = ('post', 'author', 'text')
     list_filter = ('created',)
 
 

@@ -7,10 +7,11 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import Client, TestCase, override_settings
 from django.urls import reverse
 
-from ..models import Group, Post, User
+from ..models import Comment, Group, Post, User
 
 POST_CREATE_URL = reverse('posts:post_create')
-USER = 'TestAuthor'
+USER = 'TestName'
+AUTHOR = 'TestAuthor'
 PROFILE_URL = reverse('posts:profile', kwargs={'username': USER})
 TEMP_MEDIA_ROOT = tempfile.mkdtemp(dir=settings.BASE_DIR)
 
@@ -20,6 +21,7 @@ class PostCreateFormTest(TestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
+        cls.user = User.objects.create_user(username=USER)
         cls.group = Group.objects.create(
             title='Тестовая группа',
             slug='test-slug',
@@ -32,16 +34,22 @@ class PostCreateFormTest(TestCase):
         )
         cls.post = Post.objects.create(
             text='Тестовый текст',
-            author=User.objects.create(username=USER),
+            author=User.objects.create(username=AUTHOR),
             group=cls.group,
         )
         cls.POST_EDIT_URL = reverse(
             'posts:post_edit', kwargs={'post_id': cls.post.id})
         cls.POST_DETAIL_URL = reverse(
             'posts:post_detail', kwargs={'post_id': cls.post.id})
+        cls.COMMENT_URL = reverse(
+            'posts:add_comment', kwargs={'post_id': cls.post.id})
+        cls.LOGIN_COMMENT = reverse(
+            'users:login') + '?next=' + cls.COMMENT_URL
 
     def setUp(self):
         self.guest = Client()
+        self.client = Client()
+        self.client.force_login(self.user)
         self.author = Client()
         self.author.force_login(self.post.author)
 
@@ -53,13 +61,13 @@ class PostCreateFormTest(TestCase):
     def test_create_post_with_group_created_correct(self):
         """Проверка создания поста"""
         posts_before = set(Post.objects.all())
-        small_gif = (            
-             b'\x47\x49\x46\x38\x39\x61\x02\x00'
-             b'\x01\x00\x80\x00\x00\x00\x00\x00'
-             b'\xFF\xFF\xFF\x21\xF9\x04\x00\x00'
-             b'\x00\x00\x00\x2C\x00\x00\x00\x00'
-             b'\x02\x00\x01\x00\x00\x02\x02\x0C'
-             b'\x0A\x00\x3B'
+        small_gif = (
+            b'\x47\x49\x46\x38\x39\x61\x02\x00'
+            b'\x01\x00\x80\x00\x00\x00\x00\x00'
+            b'\xFF\xFF\xFF\x21\xF9\x04\x00\x00'
+            b'\x00\x00\x00\x2C\x00\x00\x00\x00'
+            b'\x02\x00\x01\x00\x00\x02\x02\x0C'
+            b'\x0A\x00\x3B'
         )
         uploaded = SimpleUploadedFile(
             name='small.gif',
@@ -72,7 +80,7 @@ class PostCreateFormTest(TestCase):
             'image': uploaded,
         }
 
-        response = self.author.post(
+        response = self.client.post(
             POST_CREATE_URL,
             data=form_fields,
             follow=True
@@ -84,8 +92,8 @@ class PostCreateFormTest(TestCase):
         post = posts_after.difference(posts_before).pop()
         self.assertEqual(post.text, form_fields['text'])
         self.assertEqual(post.group.id, form_fields['group'])
-        self.assertTrue(post.image).exists()
-        self.assertIsNotNone(post.author)
+        self.assertEqual(post.author, self.user)
+        self.assertTrue(post.image)
 
     def test_edit_post_with_group_created_correct(self):
         """Проверка редактирования поста"""
@@ -131,3 +139,34 @@ class PostCreateFormTest(TestCase):
                 form_field = self.author.get(
                     url).context.get('form').fields.get(value)
                 self.assertIsInstance(form_field, expected)
+
+    def test_add_comment(self):
+        """Проверка добавления комментария"""
+        comments_before = set(Comment.objects.all())
+        form_fields = {
+            'text': 'Тестовый комментарий',
+            'post': self.post,
+        }
+        clients = [
+            self.guest,
+            self.client,
+        ]
+        for client in clients:
+            response = client.post(
+                self.COMMENT_URL,
+                data=form_fields,
+                follow=True
+            )
+            if client == self.client:
+                comments_after = set(Comment.objects.all())
+                self.assertEqual(response.status_code, 200)
+                self.assertRedirects(response, self.POST_DETAIL_URL)
+                self.assertEqual(len(comments_after), len(comments_before) + 1)
+                post = comments_after.difference(comments_before).pop()
+                self.assertEqual(post.text, form_fields['text'])
+                self.assertEqual(post.id, self.post.id)
+                self.assertEqual(post.author, self.user)
+            else:
+                comments_after = set(Comment.objects.all())
+                self.assertEqual(len(comments_after), len(comments_before))
+                self.assertRedirects(response, self.LOGIN_COMMENT)

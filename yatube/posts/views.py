@@ -4,7 +4,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 
 from yatube.settings import PAGINATOR_COUNT
 from .forms import PostForm, CommentForm
-from .models import Comment, Group, Post, User
+from .models import Group, Post, User, Follow
 
 
 def post_paginator(posts, request):
@@ -31,9 +31,14 @@ def group_posts(request, slug):
 
 def profile(request, username):
     author = get_object_or_404(User, username=username)
+    following = False
+    if request.user.is_authenticated:
+        if Follow.objects.filter(user=request.user, author=author).exists():
+            following = True
     context = {
         'author': author,
         'page_obj': post_paginator(author.post.all(), request),
+        'following': following,
     }
     return render(request, 'posts/profile.html', context)
 
@@ -52,7 +57,7 @@ def post_detail(request, post_id):
 
 @login_required
 def post_create(request):
-    form = PostForm(request.POST or None)
+    form = PostForm(request.POST or None, files=request.FILES or None)
     if form.is_valid():
         post = form.save(commit=False)
         post.author = request.user
@@ -85,7 +90,7 @@ def post_edit(request, post_id):
 
 @login_required
 def add_comment(request, post_id):
-    post = get_object_or_404(Post, id=post_id) 
+    post = get_object_or_404(Post, id=post_id)
     form = CommentForm(request.POST or None)
     if form.is_valid():
         comment = form.save(commit=False)
@@ -93,3 +98,29 @@ def add_comment(request, post_id):
         comment.post = post
         comment.save()
     return redirect('posts:post_detail', post_id=post_id)
+
+
+@login_required
+def follow_index(request):
+    return render(request,
+                  'posts/follow.html',
+                  {'page_obj': post_paginator(Post.objects.filter(
+                      author__following__user=request.user),
+                      request)})
+
+
+@login_required
+def profile_follow(request, username):
+    author = get_object_or_404(User, username=username)
+    if author == request.user:
+        return redirect('posts:profile', username)
+    else:
+        Follow.objects.get_or_create(user=request.user, author=author)
+        return redirect('posts:profile', username)
+
+
+@login_required
+def profile_unfollow(request, username):
+    author = get_object_or_404(User, username=username)
+    Follow.objects.filter(user=request.user, author=author).delete()
+    return redirect('posts:profile', username)

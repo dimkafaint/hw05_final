@@ -1,6 +1,7 @@
 from django.test import TestCase, Client
 from django.urls import reverse
 
+
 from ..models import Group, Post, User
 
 
@@ -12,6 +13,9 @@ PROFILE_URL = reverse('posts:profile', kwargs={'username': USER})
 POST_CREATE_URL = reverse('posts:post_create')
 LOGIN_CREATE = reverse('users:login') + '?next=' + POST_CREATE_URL
 ERROR_404 = '/whatisthis/'
+FOLLOW_INDEX_URL = reverse('posts:follow_index')
+FOLLOW_URL = reverse('posts:profile_follow', kwargs={'username': USER})
+UNFOLLOW_URL = reverse('posts:profile_unfollow', kwargs={'username': USER})
 
 
 class PostURLTests(TestCase):
@@ -54,6 +58,9 @@ class PostURLTests(TestCase):
             [self.POST_EDIT_URL, 302, self.client],
             [POST_CREATE_URL, 200, self.client],
             [POST_CREATE_URL, 302, self.guest],
+            [FOLLOW_INDEX_URL, 200, self.client],
+            [FOLLOW_URL, 302, self.client],
+            [UNFOLLOW_URL, 302, self.client],
             [ERROR_404, 404, self.client]
         ]
         for url, code, client in urls:
@@ -69,7 +76,8 @@ class PostURLTests(TestCase):
             [self.POST_DETAIL_URL, 'posts/post_detail.html', self.client],
             [POST_CREATE_URL, 'posts/create_post.html', self.client],
             [self.POST_EDIT_URL, 'posts/create_post.html', self.author],
-            [ERROR_404, 'core/404.html', self.client]
+            [ERROR_404, 'core/404.html', self.client],
+            [FOLLOW_INDEX_URL, 'posts/follow.html', self.client]
 
         ]
         for name, template, client in template_url_names:

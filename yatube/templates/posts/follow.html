@@ -1,11 +1,11 @@
 {% extends 'base.html'%}
 {% block title %}
-  Последние обновления на сайте
+  Подписки
 {% endblock title %}
 {% load cache %}
 {% block content %}
 {% load thumbnail %}
-{% cache 20 index_page %}
+{% cache 20 follow_page %}
 {% include 'posts/includes/switcher.html' %}
   {% for post in page_obj %}
     <ul>
@@ -28,5 +28,3 @@
   {% endcache %} 
   {% include 'posts/includes/paginator.html' %}
 {% endblock %}
-
-

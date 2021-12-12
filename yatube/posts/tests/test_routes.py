@@ -11,7 +11,10 @@ class TestRoutes(TestCase):
             ['profile', [USERNAME], f'/profile/{USERNAME}/'],
             ['post_create', None, '/create/'],
             ['post_detail', [ID], f'/posts/{ID}/'],
-            ['post_edit', [ID], f'/posts/{ID}/edit/']
+            ['post_edit', [ID], f'/posts/{ID}/edit/'],
+            ['follow_index', None, '/follow/'],
+            ['profile_follow', [USERNAME], f'/profile/{USERNAME}/follow/'],
+            ['profile_unfollow', [USERNAME], f'/profile/{USERNAME}/unfollow/']
         ]
         for name, keys, url in cases:
             with self.subTest(url=url):
