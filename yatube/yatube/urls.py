@@ -11,7 +11,7 @@ urlpatterns = [
     path('', include('posts.urls', namespace='post')),
 ]
 handler404 = 'core.views.page_not_found'
-handler403 = 'core.views.permission_denied_view'
+handler403 = 'core.views.csrf_failure'
 handler500 = 'core.views.server_error'
 
 if settings.DEBUG:

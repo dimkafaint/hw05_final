@@ -13,7 +13,7 @@ urlpatterns = [
     path('create/', post_create, name='post_create'),
     path('posts/<int:post_id>/edit/', post_edit, name='post_edit'),
     path('posts/<int:post_id>/', post_detail, name='post_detail'),
-    path('posts/<int:post_id>/comment', add_comment, name='add_comment'),
+    path('posts/<int:post_id>/comment/', add_comment, name='add_comment'),
     path('follow/', follow_index, name='follow_index'),
     path('profile/<str:username>/follow/',
          profile_follow,
