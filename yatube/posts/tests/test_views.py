@@ -1,5 +1,4 @@
 from django.core.cache import cache
-from django.core.cache.utils import make_template_fragment_key
 from django.test import Client, TestCase
 from django.urls import reverse
 
@@ -13,20 +12,22 @@ GROUP_URL = reverse('posts:group_list', kwargs={'slug': SLUG})
 ANOTHER_SLUG = 'another_test-slug'
 ANOTHER_GROUP_URL = reverse('posts:group_list',
                             kwargs={'slug': ANOTHER_SLUG})
-USER = 'TestAuthor'
-PROFILE_URL = reverse('posts:profile', kwargs={'username': USER})
+USER = 'Testname'
+AUTHOR = 'TestAuthor'
+PROFILE_URL = reverse('posts:profile', kwargs={'username': AUTHOR})
 FOLLOW_INDEX = reverse('posts:follow_index')
+FOLLOW = reverse('posts:profile_follow', kwargs={'username': AUTHOR})
+UNFOLLOW = reverse('posts:profile_unfollow', kwargs={'username': AUTHOR})
 
 
 class PostPagesTest(TestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        cls.user = User.objects.create_user(username='TestName')
-        cls.follower = User.objects.create_user(username='Follower')
+        cls.user = User.objects.create_user(username=USER)
         cls.group = Group.objects.create(
             title='Тестовая группа',
-            slug='test-slug',
+            slug=SLUG,
             description='Тестовое описание',
         )
         cls.another_group = Group.objects.create(
@@ -36,28 +37,24 @@ class PostPagesTest(TestCase):
         )
         cls.post = Post.objects.create(
             text='TestText',
-            author=User.objects.create(username=USER),
+            author=User.objects.create(username=AUTHOR),
             group=cls.group,
         )
         cls.follow = Follow.objects.create(
             user=cls.user,
-            author=cls.follower
+            author=cls.post.author
         )
+        cls.guest = Client()
+        cls.logged_user = Client()
+        cls.logged_user.force_login(cls.user)
+        cls.author = Client()
+        cls.author.force_login(cls.post.author)
         cls.POST_DETAIL_URL = reverse(
             'posts:post_detail', kwargs={'post_id': cls.post.id})
         cls.FOLLOW = reverse(
-            'posts:profile_follow', kwargs={'username': cls.follower})
+            'posts:profile_follow', kwargs={'username': cls.post.author})
         cls.UNFOLLOW = reverse(
-            'posts:profile_unfollow', kwargs={'username': cls.follower})
-
-    def setUp(self):
-        self.guest = Client()
-        self.client = Client()
-        self.client.force_login(self.user)
-        self.author = Client()
-        self.author.force_login(self.post.author)
-        self.author = Client()
-        self.author.force_login(self.follower)
+            'posts:profile_unfollow', kwargs={'username': cls.post.author})
 
     def test_post_shows_on_page(self):
         """Пост отображается на странице"""
@@ -65,10 +62,11 @@ class PostPagesTest(TestCase):
             INDEX_URL,
             GROUP_URL,
             PROFILE_URL,
-            self.POST_DETAIL_URL
+            self.POST_DETAIL_URL,
+            FOLLOW_INDEX
         ]
         for url in page_urls:
-            response = self.client.get(url)
+            response = self.logged_user.get(url)
             if url == self.POST_DETAIL_URL:
                 post = response.context['post']
             else:
@@ -83,7 +81,7 @@ class PostPagesTest(TestCase):
 
     def test_group_list_show_correct_context(self):
         """Шаблон group_list сформирован с правильным контекстом."""
-        response = self.client.get(GROUP_URL)
+        response = self.logged_user.get(GROUP_URL)
         group = response.context.get('group')
         self.assertEqual(self.group, response.context['group'])
         self.assertEqual(self.group.slug, group.slug)
@@ -92,44 +90,53 @@ class PostPagesTest(TestCase):
 
     def test_post_not_in_another_group(self):
         """Пост не попал в другую группу"""
-        response = self.client.get(ANOTHER_GROUP_URL).context['page_obj']
+        response = self.logged_user.get(ANOTHER_GROUP_URL).context['page_obj']
         self.assertNotIn(self.post, response)
+
+    def test_follow_on_right_page(self):
+        """Поста нет ну чужой ленте подписок"""
+        response = self.author.get(FOLLOW_INDEX)
+        posts = response.context['page_obj']
+        self.assertNotIn(self.post, posts)
 
     def test_profile_show_correct_context(self):
         """Шаблон profile сформирован с правильным контекстом."""
-        response = self.client.get(PROFILE_URL)
+        response = self.logged_user.get(PROFILE_URL)
         self.assertEqual(self.post.author, response.context['author'])
 
     def test_cache_index_page(self):
         """Тест кэша"""
-        self.client.get(INDEX_URL)
+        response = self.logged_user.get(INDEX_URL)
         Post.objects.all().delete()
-        key = make_template_fragment_key('index_page')
-        self.assertTrue(cache.get(key))
+        self.assertIn(self.post, response.context['page_obj'])
         cache.clear()
-        self.assertFalse(cache.get(key))
+        response = self.logged_user.get(INDEX_URL)
+        self.assertNotIn(self.post, response.context['page_obj'])
 
     def test_follow(self):
         """Тест подписки"""
-        self.client.get(self.FOLLOW)
+        Follow.objects.all().delete()
+        self.logged_user.get(self.FOLLOW)
         self.assertTrue(Follow.objects.filter(
-            user=self.user, author=self.follower).exists())
+            user=self.user, author=self.post.author).exists())
 
     def test_unfollow(self):
         """Тест отписки"""
-        self.client.get(self.UNFOLLOW)
+        self.assertTrue(Follow.objects.filter(
+            user=self.user, author=self.post.author).exists())
+        self.logged_user.get(self.UNFOLLOW)
         self.assertFalse(Follow.objects.filter(
-            user=self.user, author=self.follower).exists())
+            user=self.user, author=self.post.author).exists())
 
 
 class PostPaginatorTest(TestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        cls.user = User.objects.create_user(username='TestAuthor')
+        cls.user = User.objects.create_user(username=AUTHOR)
         cls.group = Group.objects.create(
             title='Тестовая группа',
-            slug='test-slug',
+            slug=SLUG,
             description='Тестовое описание',
         )
         cls.posts_count = PAGINATOR_COUNT + 1

@@ -1,7 +1,6 @@
 from django.test import TestCase, Client
 from django.urls import reverse
 
-
 from ..models import Group, Post, User
 
 
@@ -9,6 +8,7 @@ INDEX_URL = reverse('posts:index')
 SLUG = 'test-slug'
 GROUP_URL = reverse('posts:group_list', kwargs={'slug': SLUG})
 USER = 'TestAuthor'
+ANOTHER_USER = 'TestName'
 PROFILE_URL = reverse('posts:profile', kwargs={'username': USER})
 POST_CREATE_URL = reverse('posts:post_create')
 LOGIN_CREATE = reverse('users:login') + '?next=' + POST_CREATE_URL
@@ -22,7 +22,7 @@ class PostURLTests(TestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        cls.user = User.objects.create_user(username='TestName')
+        cls.user = User.objects.create_user(username=ANOTHER_USER)
         cls.group = Group.objects.create(
             title='Тестовая группа',
             slug=SLUG,
@@ -33,6 +33,11 @@ class PostURLTests(TestCase):
             author=User.objects.create(username=USER),
             group=cls.group,
         )
+        cls.guest = Client()
+        cls.logged_user = Client()
+        cls.logged_user.force_login(cls.user)
+        cls.author = Client()
+        cls.author.force_login(cls.post.author)
         cls.POST_DETAIL_URL = reverse(
             'posts:post_detail', kwargs={'post_id': cls.post.id})
         cls.POST_EDIT_URL = reverse(
@@ -59,8 +64,11 @@ class PostURLTests(TestCase):
             [POST_CREATE_URL, 200, self.client],
             [POST_CREATE_URL, 302, self.guest],
             [FOLLOW_INDEX_URL, 200, self.client],
+            [FOLLOW_INDEX_URL, 302, self.guest],
             [FOLLOW_URL, 302, self.client],
+            [FOLLOW_URL, 302, self.guest],
             [UNFOLLOW_URL, 302, self.client],
+            [UNFOLLOW_URL, 302, self.guest],
             [ERROR_404, 404, self.client]
         ]
         for url, code, client in urls:
@@ -89,7 +97,9 @@ class PostURLTests(TestCase):
         urls = [
             [self.POST_EDIT_URL, self.POST_DETAIL_URL, self.client],
             [POST_CREATE_URL, LOGIN_CREATE, self.guest],
-            [self.POST_EDIT_URL, self.LOGIN_EDIT, self.guest]
+            [self.POST_EDIT_URL, self.LOGIN_EDIT, self.guest],
+            [FOLLOW_URL, PROFILE_URL, self.client],
+            [UNFOLLOW_URL, PROFILE_URL, self.client]
         ]
         for name, redirect, client in urls:
             with self.subTest(name=name, redirect=redirect):

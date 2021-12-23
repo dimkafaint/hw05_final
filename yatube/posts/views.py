@@ -31,8 +31,8 @@ def group_posts(request, slug):
 
 def profile(request, username):
     author = get_object_or_404(User, username=username)
-    following = Follow.objects.filter(
-        user=request.user, author=author).exists() and request.user.is_authenticated
+    following = request.user.is_authenticated and request.user != author and (
+        Follow.objects.filter(user=request.user, author=author).exists())
     context = {
         'author': author,
         'page_obj': post_paginator(author.post.all(), request),
@@ -117,6 +117,5 @@ def profile_follow(request, username):
 
 @login_required
 def profile_unfollow(request, username):
-    author = get_object_or_404(User, username=username)
-    Follow.objects.filter(user=request.user, author=author).delete()
+    get_object_or_404(Follow, user=request.user).delete()
     return redirect('posts:profile', username)
