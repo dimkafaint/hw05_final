@@ -106,12 +106,13 @@ class PostPagesTest(TestCase):
 
     def test_cache_index_page(self):
         """Тест кэша"""
-        response = self.logged_user.get(INDEX_URL)
+        posts_before = self.logged_user.get(INDEX_URL).content
         Post.objects.all().delete()
-        self.assertIn(self.post, response.context['page_obj'])
+        posts_after = self.logged_user.get(INDEX_URL).content
+        self.assertTrue(posts_before == posts_after)
         cache.clear()
-        response = self.logged_user.get(INDEX_URL)
-        self.assertNotIn(self.post, response.context['page_obj'])
+        posts_after_clear_cache = self.logged_user.get(INDEX_URL).content
+        self.assertFalse(posts_before == posts_after_clear_cache)
 
     def test_follow(self):
         """Тест подписки"""
