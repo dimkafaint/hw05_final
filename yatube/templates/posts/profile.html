@@ -26,7 +26,8 @@
     {% endif %}
   {% endif %}
   {% for post in page_obj %}
-    {% include 'posts/includes/posts_marking.html' with group_on_page=True profile_detail=True %}
+    {% include 'posts/includes/post_on_page.html' with profile_detail=True %}
+    {% if not forloop.last %}<hr>{% endif %}
   {% endfor %}
 </div>
 {% endblock %}

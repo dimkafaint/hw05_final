@@ -4,11 +4,12 @@
 {% endblock title %}
 {% block content %}
   {% load cache %}
-  {% cache 20 index_page %}
-  {% include 'posts/includes/switcher.html' with index=True %}
-  {% for post in page_obj %}
-    {% include 'posts/includes/posts_marking.html' with group_on_page=True %}
-  {% endfor %}
+    {% cache 20 index_page %}
+    {% include 'posts/includes/switcher.html' with index=True %}
+    {% for post in page_obj %}
+      {% include 'posts/includes/post_on_page.html' %}
+      {% if not forloop.last %}<hr>{% endif %}
+    {% endfor %}
   {% endcache %}
 {% include 'posts/includes/paginator.html' %}
 {% endblock %}
