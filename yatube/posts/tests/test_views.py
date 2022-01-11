@@ -14,10 +14,11 @@ ANOTHER_GROUP_URL = reverse('posts:group_list',
                             kwargs={'slug': ANOTHER_SLUG})
 USER = 'Testname'
 AUTHOR = 'TestAuthor'
+PUBLISHER = 'Publisher'
 PROFILE_URL = reverse('posts:profile', kwargs={'username': AUTHOR})
 FOLLOW_INDEX = reverse('posts:follow_index')
-FOLLOW = reverse('posts:profile_follow', kwargs={'username': AUTHOR})
-UNFOLLOW = reverse('posts:profile_unfollow', kwargs={'username': AUTHOR})
+FOLLOW = reverse('posts:profile_follow', kwargs={'username': PUBLISHER})
+UNFOLLOW = reverse('posts:profile_unfollow', kwargs={'username': PUBLISHER})
 
 
 class PostPagesTest(TestCase):
@@ -25,6 +26,7 @@ class PostPagesTest(TestCase):
     def setUpClass(cls):
         super().setUpClass()
         cls.user = User.objects.create_user(username=USER)
+        cls.publisher = User.objects.create_user(username=PUBLISHER)
         cls.group = Group.objects.create(
             title='Тестовая группа',
             slug=SLUG,
@@ -44,6 +46,10 @@ class PostPagesTest(TestCase):
             user=cls.user,
             author=cls.post.author
         )
+        cls.another_follow = Follow.objects.create(
+            user=cls.user,
+            author=cls.publisher
+        )
         cls.guest = Client()
         cls.logged_user = Client()
         cls.logged_user.force_login(cls.user)
@@ -51,10 +57,6 @@ class PostPagesTest(TestCase):
         cls.author.force_login(cls.post.author)
         cls.POST_DETAIL_URL = reverse(
             'posts:post_detail', kwargs={'post_id': cls.post.id})
-        cls.FOLLOW = reverse(
-            'posts:profile_follow', kwargs={'username': cls.post.author})
-        cls.UNFOLLOW = reverse(
-            'posts:profile_unfollow', kwargs={'username': cls.post.author})
 
     def test_post_shows_on_page(self):
         """Пост отображается на странице"""
@@ -89,15 +91,14 @@ class PostPagesTest(TestCase):
         self.assertEqual(self.group.description, group.description)
 
     def test_post_not_in_another_group(self):
-        """Пост не попал в другую группу"""
-        response = self.logged_user.get(ANOTHER_GROUP_URL).context['page_obj']
-        self.assertNotIn(self.post, response)
-
-    def test_follow_on_right_page(self):
-        """Поста нет ну чужой ленте подписок"""
-        response = self.author.get(FOLLOW_INDEX)
-        posts = response.context['page_obj']
-        self.assertNotIn(self.post, posts)
+        """Пост не попал в другую группу и ленту подписок"""
+        urls = [
+            ANOTHER_GROUP_URL,
+            FOLLOW_INDEX
+        ]
+        for url in urls:
+            response = self.author.get(url).context['page_obj']
+            self.assertNotIn(self.post, response)
 
     def test_profile_show_correct_context(self):
         """Шаблон profile сформирован с правильным контекстом."""
@@ -117,17 +118,17 @@ class PostPagesTest(TestCase):
     def test_follow(self):
         """Тест подписки"""
         Follow.objects.all().delete()
-        self.logged_user.get(self.FOLLOW)
+        self.logged_user.get(FOLLOW)
         self.assertTrue(Follow.objects.filter(
-            user=self.user, author=self.post.author).exists())
+            user=self.user, author=self.publisher).exists())
 
     def test_unfollow(self):
         """Тест отписки"""
         self.assertTrue(Follow.objects.filter(
-            user=self.user, author=self.post.author).exists())
-        self.logged_user.get(self.UNFOLLOW)
+            user=self.user, author=self.publisher).exists())
+        self.logged_user.get(UNFOLLOW)
         self.assertFalse(Follow.objects.filter(
-            user=self.user, author=self.post.author).exists())
+            user=self.user, author=self.publisher).exists())
 
 
 class PostPaginatorTest(TestCase):
