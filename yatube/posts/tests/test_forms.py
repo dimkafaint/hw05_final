@@ -160,15 +160,15 @@ class PostCreateFormTest(TestCase):
     def test_post_create_and_edit_post_show_correct_context(self):
         """Шаблон создания и редактирования поста
         сформирован с правильным контекстом."""
-        form_fields = [[POST_CREATE_URL, self.POST_EDIT_URL],
-                       [['text', forms.fields.CharField],
+        urls = [POST_CREATE_URL, self.POST_EDIT_URL]
+        form_fields = [['text', forms.fields.CharField],
                        ['group', forms.fields.ChoiceField],
-                       ['image', forms.fields.ImageField]]]
-        for url in form_fields[0]:
-            for value, expected in form_fields[1]:
+                       ['image', forms.fields.ImageField]]
+        for url in urls:
+            form = self.author.get(url)
+            for value, expected in form_fields:
                 with self.subTest(value=value):
-                    form_field = self.author.get(
-                        url).context.get('form').fields.get(value)
+                    form_field = form.context.get('form').fields.get(value)
                     self.assertIsInstance(form_field, expected)
 
     def test_add_comment_user(self):
