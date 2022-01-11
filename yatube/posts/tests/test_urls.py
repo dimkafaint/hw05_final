@@ -61,13 +61,13 @@ class PostURLTests(TestCase):
             [POST_CREATE_URL, 200, self.logged_user],
             [POST_CREATE_URL, 302, self.guest],
             [FOLLOW_INDEX_URL, 200, self.logged_user],
-            [FOLLOW_INDEX_URL, 200, self.author],
             [FOLLOW_INDEX_URL, 302, self.guest],
             [FOLLOW_URL, 302, self.logged_user],
             [FOLLOW_URL, 302, self.guest],
             [FOLLOW_URL, 302, self.author],
             [UNFOLLOW_URL, 302, self.logged_user],
             [UNFOLLOW_URL, 302, self.guest],
+            [UNFOLLOW_URL, 302, self.author],
             [ERROR_404, 404, self.logged_user]
         ]
         for url, code, client in urls:
@@ -100,8 +100,8 @@ class PostURLTests(TestCase):
             [FOLLOW_URL, PROFILE_URL, self.logged_user],
             [UNFOLLOW_URL, PROFILE_URL, self.logged_user],
             [FOLLOW_URL, self.LOGIN_FOLLOW, self.guest],
-            [UNFOLLOW_URL, self.LOGIN_UNFOLLOW, self.guest]
-
+            [UNFOLLOW_URL, self.LOGIN_UNFOLLOW, self.guest],
+            [UNFOLLOW_URL, self.LOGIN_UNFOLLOW, self.author]
         ]
         for name, redirect, client in urls:
             with self.subTest(name=name, redirect=redirect):

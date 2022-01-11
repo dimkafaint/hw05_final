@@ -90,7 +90,7 @@ class PostPagesTest(TestCase):
         self.assertEqual(self.group.title, group.title)
         self.assertEqual(self.group.description, group.description)
 
-    def test_post_not_in_another_group(self):
+    def test_post_not_in_another_group_and_subscription_feed(self):
         """Пост не попал в другую группу и ленту подписок"""
         urls = [
             ANOTHER_GROUP_URL,

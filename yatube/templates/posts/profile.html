@@ -5,7 +5,7 @@
 {% block content %}
   <div class="mb-5">
   <h1>Все посты пользователя {{ author.username }} </h1>
-  <h2>Всего постов: {{ page_obj.paginator.count }} </h2>
+  <h2>Всего постов: {{ author.post.count }} </h2>
   <h2>Подписчики: {{ author.following.count }}</h2>
   <h2>Подписки: {{ author.follower.count }}</h2>
   {% if user.is_authenticated and user != author %}

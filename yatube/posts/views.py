@@ -14,8 +14,10 @@ def post_paginator(posts, request):
 
 
 def index(request):
-    return render(request, 'posts/index.html', {
-        'page_obj': post_paginator(Post.objects.all(), request)})
+    return render(
+        request,
+        'posts/index.html',
+        {'page_obj': post_paginator(Post.objects.all(), request)})
 
 
 def group_posts(request, slug):
@@ -40,14 +42,12 @@ def profile(request, username):
 
 
 def post_detail(request, post_id):
-    form = CommentForm(request.POST or None)
-    post = get_object_or_404(Post, id=post_id)
     context = {
-        'post': post,
-        'form': form,
-        'comments': post.comments.all()
+        'post': get_object_or_404(Post, id=post_id),
+        'form': CommentForm(request.POST or None),
     }
-    return render(request, 'posts/post_detail.html', context)
+    return render(
+        request, 'posts/post_detail.html', context)
 
 
 @login_required

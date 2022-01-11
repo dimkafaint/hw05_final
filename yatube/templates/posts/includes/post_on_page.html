@@ -21,3 +21,6 @@
     Группа: <a href="{% url 'post:group_list' post.group.slug %}" > {{ post.group.title }}</a>
   </li>
 {% endif %}
+{% if post_edit %}
+<a class="btn btn-primary" href="{% url 'post:post_edit' post.id %}">Редактировать</span></a>
+{% endif %}

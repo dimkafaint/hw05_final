@@ -3,12 +3,10 @@
   {{ post_detail.text|truncatechars:30 }}
 {% endblock title %}
 {% block content %}
-{% load user_filters %}
-<li class="list-group-item">
-  Всего постов автора:  <span >{{ post.author.post.count }}</span>
-</li>
-{% include 'posts/includes/post_on_page.html' %}
-{% if not forloop.last %}<hr>{% endif %}
-<a class="btn btn-primary" href="{% url 'post:post_edit' post.id %}">Редактировать</span></a>
-{% include 'posts/includes/comment.html' %}
+  {% load user_filters %}
+  <li class="list-group-item">
+    Всего постов автора:  <span >{{ post.author.post.count }}</span>
+  </li>
+  {% include 'posts/includes/post_on_page.html' with post_edit=True %}
+  {% include 'posts/includes/comment.html' %}
 {% endblock %}

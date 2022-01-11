@@ -10,6 +10,7 @@ from django.urls import reverse
 from ..models import Comment, Group, Post, User
 
 POST_CREATE_URL = reverse('posts:post_create')
+LOGIN_CREATE = reverse('users:login') + '?next=' + POST_CREATE_URL
 USER = 'TestName'
 AUTHOR = 'TestAuthor'
 PROFILE_URL = reverse('posts:profile', kwargs={'username': USER})
@@ -99,6 +100,28 @@ class PostCreateFormTest(TestCase):
         self.assertEqual(post.author, self.user)
         self.assertTrue(post.image)
 
+    def test_post_create_by_anon(self):
+        """"Проверка создания поста анонимом"""
+        posts_before = Post.objects.count()
+        uploaded = SimpleUploadedFile(
+            name='small.gif',
+            content=SMALL_GIF,
+            content_type='image/gif'
+        )
+        form_fields = {
+            'text': 'Текст для теста создания поста',
+            'group': self.group.id,
+            'image': uploaded,
+        }
+        response_anon = self.guest.post(
+            POST_CREATE_URL,
+            data=form_fields,
+            follow=False
+        )
+        self.assertEqual(response_anon.status_code, 302)
+        self.assertRedirects(response_anon, LOGIN_CREATE)
+        self.assertEqual(Post.objects.count(), posts_before)
+
     def test_edit_post_with_group_created_correct(self):
         """Проверка редактирования поста"""
         posts_before = Post.objects.count()
@@ -127,7 +150,8 @@ class PostCreateFormTest(TestCase):
         self.assertTrue(post.image)
 
     def test_post_create_and_edit_by_anon_and_non_author(self):
-        """Проверка создания/редактирования поста анонимом/не автором"""
+        """Проверка редактирования поста анонимом/не автором"""
+        posts_before = Post.objects.count()
         uploaded = SimpleUploadedFile(
             name='small.gif',
             content=SMALL_GIF,
@@ -138,11 +162,6 @@ class PostCreateFormTest(TestCase):
             'group': self.group.id,
             'image': uploaded,
         }
-        response_anon = self.guest.post(
-            POST_CREATE_URL,
-            data=form_fields,
-            follow=False
-        )
         response_anon_edit = self.guest.post(
             self.POST_EDIT_URL,
             data=form_fields,
@@ -153,9 +172,11 @@ class PostCreateFormTest(TestCase):
             data=form_fields,
             follow=False
         )
-        self.assertEqual(response_anon.status_code, 302)
-        self.assertEqual(response_anon_edit.status_code, 302)
-        self.assertEqual(response_non_author_edit.status_code, 302)
+        clients = [response_anon_edit, response_non_author_edit]
+        for client in clients:
+            with self.subTest(client=client):
+                self.assertEqual(client.status_code, 302)
+                self.assertEqual(Post.objects.count(), posts_before)
 
     def test_post_create_and_edit_post_show_correct_context(self):
         """Шаблон создания и редактирования поста
@@ -189,7 +210,6 @@ class PostCreateFormTest(TestCase):
         self.assertEqual(len(comments_after), len(comments_before) + 1)
         comment = comments_after.difference(comments_before).pop()
         self.assertEqual(comment.text, form_fields['text'])
-        self.assertEqual(comment.id, self.post.id)
         self.assertEqual(comment.author, self.user)
         self.assertEqual(comment.post, self.post)
 
