@@ -10,19 +10,13 @@
   <h2>Подписки: {{ author.follower.count }}</h2>
   {% if user.is_authenticated and user != author %}
     {% if following %}
-      <a
-        class="btn btn-outline-danger"
-        href="{% url 'posts:profile_unfollow' author.username %}" role="button"
-      >
-        Отписаться
-      </a>
+      <a class="btn btn-outline-danger"
+      href="{% url 'posts:profile_unfollow' author.username %}" 
+      role="button">Отписаться</a> 
     {% else %}
-        <a
-          class="btn btn-outline-success"
-          href="{% url 'posts:profile_follow' author.username %}" role="button"
-        >
-          Подписаться
-        </a>
+      <a class="btn btn-outline-danger"
+      href="{% url 'posts:profile_follow' author.username %}" 
+      role="button">Подписаться</a> 
     {% endif %}
   {% endif %}
   {% for post in page_obj %}

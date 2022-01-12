@@ -93,8 +93,7 @@ class PostCreateFormTest(TestCase):
         posts_after = set(Post.objects.all())
         self.assertEqual(response.status_code, 200)
         self.assertRedirects(response, PROFILE_URL)
-        self.assertEqual(len(posts_after), len(
-            posts_before.union(posts_after)))
+        self.assertEqual(posts_after, posts_before.union(posts_after))
         post = posts_after.difference(posts_before).pop()
         self.assertEqual(post.text, form_fields['text'])
         self.assertEqual(post.group.id, form_fields['group'])
@@ -163,20 +162,15 @@ class PostCreateFormTest(TestCase):
             'group': self.group.id,
             'image': uploaded,
         }
-        response_anon_edit = self.guest.post(
-            self.POST_EDIT_URL,
-            data=form_fields,
-            follow=False
-        )
-        response_non_author_edit = self.logged_user.post(
-            self.POST_EDIT_URL,
-            data=form_fields,
-            follow=False
-        )
-        clients = [response_anon_edit, response_non_author_edit]
+        clients = [self.guest, self.logged_user]
         for client in clients:
+            response = client.post(
+                self.POST_EDIT_URL,
+                data=form_fields,
+                follow=False
+            )
             with self.subTest(client=client):
-                self.assertEqual(client.status_code, 302)
+                self.assertEqual(response.status_code, 302)
                 self.assertEqual(Post.objects.count(), posts_before)
 
     def test_post_create_and_edit_post_show_correct_context(self):

@@ -13,11 +13,9 @@ def post_paginator(posts, request):
     return paginator.get_page(page_number)
 
 
-def index(request):
-    return render(
-        request,
-        'posts/index.html',
-        {'page_obj': post_paginator(Post.objects.all(), request)})
+def index(request): 
+    return render(request, 'posts/index.html', { 
+        'page_obj': post_paginator(Post.objects.all(), request)}) 
 
 
 def group_posts(request, slug):
@@ -115,9 +113,8 @@ def profile_follow(request, username):
 
 @login_required
 def profile_unfollow(request, username):
-    if username != request.user.username:
-        get_object_or_404(
-            Follow,
-            user=request.user,
-            author__username=username,).delete()
+    get_object_or_404(
+        Follow,
+        user=request.user,
+        author__username=username,).delete()
     return redirect('posts:profile', username)
