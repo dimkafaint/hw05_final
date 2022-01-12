@@ -93,7 +93,7 @@ class PostCreateFormTest(TestCase):
         posts_after = set(Post.objects.all())
         self.assertEqual(response.status_code, 200)
         self.assertRedirects(response, PROFILE_URL)
-        self.assertEqual(posts_after, posts_before.union(posts_after))
+        self.assertEqual(len(posts_after.difference(posts_before)), 1)
         post = posts_after.difference(posts_before).pop()
         self.assertEqual(post.text, form_fields['text'])
         self.assertEqual(post.group.id, form_fields['group'])
@@ -102,7 +102,7 @@ class PostCreateFormTest(TestCase):
 
     def test_post_create_by_anon(self):
         """"Проверка создания поста анонимом"""
-        posts_before = Post.objects.count()
+        posts_before = set(Post.objects.all())
         uploaded = SimpleUploadedFile(
             name='small.gif',
             content=SMALL_GIF,
@@ -118,9 +118,10 @@ class PostCreateFormTest(TestCase):
             data=form_fields,
             follow=False
         )
+        posts_after = set(Post.objects.all())
         self.assertEqual(response_anon.status_code, 302)
         self.assertRedirects(response_anon, LOGIN_CREATE)
-        self.assertEqual(Post.objects.count(), posts_before)
+        self.assertEqual(len(posts_after.difference(posts_before)), 0)
 
     def test_edit_post_with_group_created_correct(self):
         """Проверка редактирования поста"""
@@ -151,16 +152,16 @@ class PostCreateFormTest(TestCase):
 
     def test_post_create_and_edit_by_anon_and_non_author(self):
         """Проверка редактирования поста анонимом/не автором"""
-        posts_before = Post.objects.count()
-        uploaded = SimpleUploadedFile(
+        posts_before = set(Post.objects.all())
+        reloaded = SimpleUploadedFile(
             name='small.gif',
             content=SMALL_GIF,
             content_type='image/gif'
         )
         form_fields = {
-            'text': 'Текст для теста создания поста',
-            'group': self.group.id,
-            'image': uploaded,
+            'text': 'Текст для теста редактирования',
+            'group': self.another_group.id,
+            'image': reloaded
         }
         clients = [self.guest, self.logged_user]
         for client in clients:
@@ -169,9 +170,12 @@ class PostCreateFormTest(TestCase):
                 data=form_fields,
                 follow=False
             )
+            posts_after = set(Post.objects.all())
+            post = Post.objects.get(pk=1)
             with self.subTest(client=client):
                 self.assertEqual(response.status_code, 302)
-                self.assertEqual(Post.objects.count(), posts_before)
+                self.assertEqual(len(posts_after.difference(posts_before)), 0)
+                self.assertEqual(self.post, post)
 
     def test_post_create_and_edit_post_show_correct_context(self):
         """Шаблон создания и редактирования поста
@@ -202,8 +206,7 @@ class PostCreateFormTest(TestCase):
         comments_after = set(Comment.objects.all())
         self.assertEqual(response.status_code, 200)
         self.assertRedirects(response, self.POST_DETAIL_URL)
-        self.assertEqual(len(comments_after), len(
-            comments_before.union(comments_after)))
+        self.assertEqual(len(comments_after.difference(comments_before)), 1)
         comment = comments_after.difference(comments_before).pop()
         self.assertEqual(comment.text, form_fields['text'])
         self.assertEqual(comment.author, self.user)
@@ -218,6 +221,6 @@ class PostCreateFormTest(TestCase):
             data=form_fields,
             follow=True
         )
-        comments = set(Comment.objects.all()) - comments
+        comments = set(Comment.objects.all()).difference(comments)
         self.assertRedirects(response, self.LOGIN_COMMENT)
         self.assertFalse(comments)

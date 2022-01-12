@@ -1,7 +1,7 @@
 from django.test import TestCase, Client
 from django.urls import reverse
 
-from ..models import Group, Post, User
+from ..models import Group, Post, Follow, User
 
 
 INDEX_URL = reverse('posts:index')
@@ -32,6 +32,10 @@ class PostURLTests(TestCase):
             text='TestText',
             author=User.objects.create(username=USER),
             group=cls.group,
+        )
+        cls.follow = Follow.objects.create(
+            user=cls.post.author,
+            author=cls.post.author,
         )
         cls.guest = Client()
         cls.logged_user = Client()

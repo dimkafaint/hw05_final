@@ -13,9 +13,9 @@ def post_paginator(posts, request):
     return paginator.get_page(page_number)
 
 
-def index(request): 
-    return render(request, 'posts/index.html', { 
-        'page_obj': post_paginator(Post.objects.all(), request)}) 
+def index(request):
+    return render(request, 'posts/index.html', {
+        'page_obj': post_paginator(Post.objects.all(), request)})
 
 
 def group_posts(request, slug):
