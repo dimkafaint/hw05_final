@@ -101,7 +101,7 @@ class PostURLTests(TestCase):
             [UNFOLLOW_URL, PROFILE_URL, self.logged_user],
             [FOLLOW_URL, self.LOGIN_FOLLOW, self.guest],
             [UNFOLLOW_URL, self.LOGIN_UNFOLLOW, self.guest],
-            [UNFOLLOW_URL, self.LOGIN_UNFOLLOW, self.author]
+            [UNFOLLOW_URL, PROFILE_URL, self.author]
         ]
         for name, redirect, client in urls:
             with self.subTest(name=name, redirect=redirect):
