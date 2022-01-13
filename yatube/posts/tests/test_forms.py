@@ -90,12 +90,12 @@ class PostCreateFormTest(TestCase):
             data=form_fields,
             follow=True
         )
-        posts_after = set(Post.objects.all())
-        post = posts_after.difference(posts_before)
+        posts = set(Post.objects.all())
         self.assertEqual(response.status_code, 200)
         self.assertRedirects(response, PROFILE_URL)
-        self.assertEqual(len(post), 1)
-        post = post.pop()
+        posts = posts.difference(posts_before)
+        self.assertEqual(len(posts), 1)
+        post = posts.pop()
         self.assertEqual(post.text, form_fields['text'])
         self.assertEqual(post.group.id, form_fields['group'])
         self.assertEqual(post.author, self.user)
@@ -172,7 +172,7 @@ class PostCreateFormTest(TestCase):
                 follow=False
             )
             posts_after = set(Post.objects.all())
-            post = posts_after.pop()
+            post = Post.objects.get(id=self.post.id)
             with self.subTest(client=client):
                 self.assertEqual(response.status_code, 302)
                 self.assertEqual(len(posts_after.difference(posts_before)), 0)
@@ -208,12 +208,12 @@ class PostCreateFormTest(TestCase):
             data=form_fields,
             follow=True
         )
-        comments_after = set(Comment.objects.all())
-        comment = comments_after.difference(comments_before)
+        comments = set(Comment.objects.all())
         self.assertEqual(response.status_code, 200)
         self.assertRedirects(response, self.POST_DETAIL_URL)
-        self.assertEqual(len(comment), 1)
-        comment = comment.pop()
+        comments = comments.difference(comments_before)
+        self.assertEqual(len(comments), 1)
+        comment = comments.pop()
         self.assertEqual(comment.text, form_fields['text'])
         self.assertEqual(comment.author, self.user)
         self.assertEqual(comment.post, self.post)
