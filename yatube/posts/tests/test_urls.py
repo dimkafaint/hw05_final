@@ -1,7 +1,7 @@
 from django.test import TestCase, Client
 from django.urls import reverse
 
-from ..models import Group, Post, Follow, User
+from ..models import Group, Post, User
 
 
 INDEX_URL = reverse('posts:index')
@@ -32,10 +32,6 @@ class PostURLTests(TestCase):
             text='TestText',
             author=User.objects.create(username=USER),
             group=cls.group,
-        )
-        cls.follow = Follow.objects.create(
-            user=cls.post.author,
-            author=cls.post.author,
         )
         cls.guest = Client()
         cls.logged_user = Client()
@@ -71,7 +67,7 @@ class PostURLTests(TestCase):
             [FOLLOW_URL, 302, self.author],
             [UNFOLLOW_URL, 302, self.logged_user],
             [UNFOLLOW_URL, 302, self.guest],
-            [UNFOLLOW_URL, 302, self.author],
+            [UNFOLLOW_URL, 404, self.author],
             [ERROR_404, 404, self.logged_user]
         ]
         for url, code, client in urls:
@@ -105,7 +101,6 @@ class PostURLTests(TestCase):
             [UNFOLLOW_URL, PROFILE_URL, self.logged_user],
             [FOLLOW_URL, self.LOGIN_FOLLOW, self.guest],
             [UNFOLLOW_URL, self.LOGIN_UNFOLLOW, self.guest],
-            [UNFOLLOW_URL, PROFILE_URL, self.author]
         ]
         for name, redirect, client in urls:
             with self.subTest(name=name, redirect=redirect):

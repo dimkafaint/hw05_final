@@ -91,10 +91,11 @@ class PostCreateFormTest(TestCase):
             follow=True
         )
         posts_after = set(Post.objects.all())
+        post = posts_after.difference(posts_before)
         self.assertEqual(response.status_code, 200)
         self.assertRedirects(response, PROFILE_URL)
-        self.assertEqual(len(posts_after.difference(posts_before)), 1)
-        post = posts_after.difference(posts_before).pop()
+        self.assertEqual(len(post), 1)
+        post = post.pop()
         self.assertEqual(post.text, form_fields['text'])
         self.assertEqual(post.group.id, form_fields['group'])
         self.assertEqual(post.author, self.user)
@@ -171,11 +172,15 @@ class PostCreateFormTest(TestCase):
                 follow=False
             )
             posts_after = set(Post.objects.all())
-            post = Post.objects.get(pk=1)
+            post = posts_after.pop()
             with self.subTest(client=client):
                 self.assertEqual(response.status_code, 302)
                 self.assertEqual(len(posts_after.difference(posts_before)), 0)
                 self.assertEqual(self.post, post)
+                self.assertEqual(self.post.text, post.text)
+                self.assertEqual(self.post.group, post.group)
+                self.assertEqual(self.post.author, post.author)
+                self.assertEqual(self.post.image, post.image)
 
     def test_post_create_and_edit_post_show_correct_context(self):
         """Шаблон создания и редактирования поста
@@ -204,10 +209,11 @@ class PostCreateFormTest(TestCase):
             follow=True
         )
         comments_after = set(Comment.objects.all())
+        comment = comments_after.difference(comments_before)
         self.assertEqual(response.status_code, 200)
         self.assertRedirects(response, self.POST_DETAIL_URL)
-        self.assertEqual(len(comments_after.difference(comments_before)), 1)
-        comment = comments_after.difference(comments_before).pop()
+        self.assertEqual(len(comment), 1)
+        comment = comment.pop()
         self.assertEqual(comment.text, form_fields['text'])
         self.assertEqual(comment.author, self.user)
         self.assertEqual(comment.post, self.post)
